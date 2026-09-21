@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+.venv/
+attached_assets/
+__pycache__/
+*.py[cod]
+*.pyo
+.DS_Store
+morrow_events.json
+*.db
+*.db-shm
+*.db-wal
