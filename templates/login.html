@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sign in — Morrow</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body class="login-page">
+    <main class="login-card card">
+      <div class="brand login-brand">
+        <div class="brand-mark">▦</div>
+        <div>
+          <div class="brand-name">morrow</div>
+          <div class="brand-caption">dates worth keeping</div>
+        </div>
+      </div>
+      <div class="eyebrow login-eyebrow">PRIVATE CALENDAR</div>
+      <h1>Welcome back.</h1>
+      {% if not has_user %}
+        <div class="setup-message">
+          <strong>Admin access is not configured yet.</strong>
+          <span>Set ADMIN_PASSWORD in Render Environment settings, then redeploy.</span>
+        </div>
+      {% endif %}
+      {% if error %}<div class="form-error">{{ error }}</div>{% endif %}
+      <form method="post" action="{{ url_for('login', next=request.args.get('next', '')) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Username<input name="username" autocomplete="username" required></label>
+        <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
+        <button class="button primary full-width" type="submit" {% if not has_user %}disabled{% endif %}>Sign in</button>
+      </form>
+    </main>
+  </body>
+</html>
