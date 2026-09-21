@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Morrow — a calm calendar for birthdays and events.">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Morrow — Birthday & Event Calendar</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">▦</div>
+          <div>
+            <div class="brand-name">morrow</div>
+            <div class="brand-caption">dates worth keeping</div>
+          </div>
+        </div>
+        <div class="nav-heading">YOUR SPACE</div>
+        <nav class="nav">
+          <button class="nav-button active" data-filter="all">▦ <span>Calendar</span></button>
+          <button class="nav-button" data-filter="birthday">♧ <span>Birthdays</span></button>
+          <button class="nav-button" data-filter="event">☷ <span>Events</span></button>
+        </nav>
+        <div class="nav-heading tools-heading">TOOLS</div>
+        <button class="nav-button" id="settings-button">⚙ <span>Settings</span></button>
+        <form class="logout-form" method="post" action="{{ url_for('logout') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="nav-button" type="submit">↪ <span>Sign out</span></button>
+        </form>
+        <div class="sidebar-quote">
+          <strong>The little dates matter.</strong>
+          <span>A quiet place for the people and plans worth remembering.</span>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="page-header">
+          <div>
+            <div class="eyebrow">PERSONAL CALENDAR</div>
+            <h1>Your dates, in one place.</h1>
+          </div>
+          <div class="header-actions">
+            <button class="button quiet" id="today-button">Today</button>
+            <button class="button quiet icon-button" id="previous-month" aria-label="Previous month">←</button>
+            <button class="button quiet icon-button" id="next-month" aria-label="Next month">→</button>
+            <button class="button quiet" id="ai-button">✦ AI ideas</button>
+            <button class="button primary" id="add-button">＋ Add a date</button>
+          </div>
+        </header>
+
+        <div id="status" class="status" role="status" aria-live="polite"></div>
+
+        <section class="content-grid">
+          <section class="card calendar-card">
+            <div class="month-bar">
+              <div>
+                <h2 id="month-label"></h2>
+                <p>A gentle overview of what's ahead.</p>
+              </div>
+              <select id="filter-select" aria-label="Filter dates">
+                <option value="all">All dates</option>
+                <option value="birthday">Birthdays</option>
+                <option value="event">Events</option>
+              </select>
+            </div>
+            <div class="weekday-row">
+              <span>MON</span><span>TUE</span><span>WED</span><span>THU</span>
+              <span>FRI</span><span>SAT</span><span>SUN</span>
+            </div>
+            <div id="calendar-grid" class="calendar-grid"></div>
+          </section>
+
+          <aside class="right-column">
+            <section class="card selected-card">
+              <div class="section-label" id="selected-label">TODAY</div>
+              <div class="selected-heading">
+                <h2 id="selected-date-label"></h2>
+                <button class="button quiet add-mini" id="selected-add" aria-label="Add date">＋</button>
+              </div>
+              <div id="selected-events"></div>
+            </section>
+            <section class="card upcoming-card">
+              <div class="section-label">NEXT UP</div>
+              <h2>Keep in mind</h2>
+              <div id="upcoming-events"></div>
+            </section>
+          </aside>
+        </section>
+
+        <footer class="card footer-card">
+          <div>🔒 <span>Your dates stay in this calendar. Export a backup whenever you like.</span></div>
+          <div class="footer-actions">
+            <button class="button quiet" id="import-button">Import</button>
+            <button class="button quiet" id="export-button">Export</button>
+            <input id="import-file" type="file" accept="application/json,.json" hidden>
+          </div>
+        </footer>
+      </main>
+    </div>
+
+    <dialog id="event-dialog" class="dialog">
+      <form method="dialog" id="event-form">
+        <div class="dialog-topline">
+          <div class="section-label" id="dialog-label">NEW DATE</div>
+          <button class="dialog-close" value="cancel" aria-label="Close">×</button>
+        </div>
+        <h2 id="dialog-title">What should we remember?</h2>
+        <input type="hidden" id="event-id">
+        <label>Name<input id="event-name" required maxlength="120" autocomplete="off"></label>
+        <label>Date (YYYY-MM-DD)<input id="event-date" required type="date"></label>
+        <label>Kind
+          <select id="event-type">
+            <option value="event">Event</option>
+            <option value="birthday">Birthday</option>
+          </select>
+        </label>
+        <p class="field-hint" id="type-hint">Events happen once on the chosen date.</p>
+        <label class="checkbox-label"><input id="event-all-day" type="checkbox" checked> All day</label>
+        <label id="time-label">Time (optional)<input id="event-time" type="time"></label>
+        <label>Color
+          <select id="event-color">
+            <option>Coral</option><option>Marigold</option><option>Teal</option>
+            <option>Plum</option><option>Ink</option>
+          </select>
+        </label>
+        <label>Reminder
+          <select id="event-reminder">
+            <option value="0">No reminder</option>
+            <option value="0">On the day</option>
+            <option value="1">1 day before</option>
+            <option value="7">1 week before</option>
+          </select>
+        </label>
+        <label>Notes (optional)<textarea id="event-notes" rows="3" maxlength="1000"></textarea></label>
+        <div class="dialog-actions">
+          <button type="button" class="button quiet danger" id="delete-button" hidden>Delete</button>
+          <span></span>
+          <button type="button" class="button quiet" id="cancel-button">Cancel</button>
+          <button type="submit" class="button primary">Save date</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="ai-dialog" class="dialog ai-dialog">
+      <div class="dialog-topline">
+        <div class="section-label">MORROW ASSISTANT</div>
+        <button class="dialog-close" id="ai-close" aria-label="Close">×</button>
+      </div>
+      <h2>Find dates worth keeping.</h2>
+      <p class="ai-intro">Ask for birthday, dinner, travel, or seasonal ideas. Research and suggestions run on the server using the providers configured in Render.</p>
+      <label>What should I suggest?
+        <textarea id="ai-prompt" rows="3" maxlength="500" placeholder="e.g. low-key autumn activities for a family weekend"></textarea>
+      </label>
+      <label>Suggestion month
+        <input id="ai-month" type="month">
+      </label>
+      <label>AI provider
+        <select id="ai-provider">
+          <option value="auto">Automatic</option>
+          <option value="openai">OpenAI</option>
+          <option value="groq">Groq</option>
+        </select>
+      </label>
+      <div class="dialog-actions ai-actions">
+        <span></span>
+        <button type="button" class="button quiet" id="ai-cancel">Cancel</button>
+        <button type="button" class="button primary" id="ai-submit">Suggest dates</button>
+      </div>
+      <div id="ai-result" class="ai-result"></div>
+    </dialog>
+
+    <dialog id="settings-dialog" class="dialog small-dialog">
+      <div class="dialog-topline">
+        <div class="section-label">PREFERENCES</div>
+        <button class="dialog-close" id="settings-close" aria-label="Close">×</button>
+      </div>
+      <h2>Make Morrow yours.</h2>
+      <div class="settings-box">
+        <strong>Online calendar</strong>
+        <p>This browser app is ready for Render. API credentials are kept server-side and are never sent to the browser.</p>
+        <div id="integration-status" class="integration-status">Checking configuration…</div>
+      </div>
+      <button class="button primary full-width" id="settings-done">Done</button>
+    </dialog>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+  </body>
+</html>
